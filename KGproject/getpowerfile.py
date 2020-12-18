@@ -18,7 +18,7 @@ document=firsttitle=secondtitle=thirdtitle=fourthtitle=documentnode=firstnode=se
 #worksheet = workbook.add_sheet('My Sheet')
 path=r"C:\Users\86136\Desktop\文档内容整理\文档"
 def wipe_line_break(str):
-    return str.replace("\n", "")
+    return str.replace("\n", "").replace(" ", "")
 
 def delete_BS(str):
     return str.replace(" ", "")
