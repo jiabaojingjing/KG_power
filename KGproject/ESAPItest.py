@@ -1,6 +1,7 @@
 
 import time
 import csv
+import docx
 from os import walk
 import xlrd
 import traceback
@@ -52,7 +53,7 @@ class ElasticObj:
     #         # print(res)
 
     def wipe_line_break(self,str):
-        return str.replace("\n", "")
+        return str.replace("\n", "").replace(" ", "")
 
     def delete_BS(self,str):
         return str.replace(" ", "")
@@ -143,6 +144,35 @@ class ElasticObj:
         success, _ = bulk(self.es, LIST, index=self.index_name, raise_on_error=True)
         print('Performed %d actions' % success)
 
+    def savadatadocx(self, filepath, filename):
+        LIST = []
+        global document, documentnode, nodedic
+        file = docx.Document(filepath)
+        print(file.paragraphs)
+        b = [j.text for j in file.paragraphs]
+        value = ''.join(b)
+        print(value)
+        filenamenew = self.wipe_line_break(filename)
+        # for para in file.paragraphs:
+        #     print(para.text)
+        # for row in range(0, filetable.nrows):
+        #     for col in range(0, filetable.ncols):
+        #         value = filetable.cell_value(row, col)
+        #         if type(value) == str:
+        #             value = self.wipe_line_break(value)
+        #             value = self.delete_BS(value)
+        #         if value == "":
+        #             continue
+        action = {
+            "_index": self.index_name,
+            "_type": self.index_type,
+            "_source": {
+                "filename": filenamenew,
+                "filecontene": value.encode('utf-8').decode('utf8')}
+        }
+        LIST.append(action)
+        success, _ = bulk(self.es, LIST, index=self.index_name, raise_on_error=True)
+        print('Performed %d actions' % success)
     def get_allfile(self,cwd):
         global row
         global col
@@ -275,7 +305,7 @@ obj =ElasticObj("file","content",ip ="127.0.0.1")
 #     # if "油浸式变压器" in item:
 #     filepath = path + "\\" + item
 #     obj.savadatawww(filepath)
-obj.savadatawww(r'C:\Users\86136\Desktop\国家电网公司变电运维管理规定（试行） 第1分册  油浸式变压器（电抗器）运维细则.xlsx','国家电网公司变电运维管理规定（试行）第1分册油浸式变压器（电抗器）运维细则')
+obj.savadatadocx(r'C:\Users\86136\Desktop\电力缺陷\通辽调研资料旧\变电五项管理规定的206册细则Word版\变电检修管理规定细则docx\国家电网公司变电检修管理规定（试行） 第1分册 油浸式变压器（电抗器）检修细则.docx','国家电网公司变电检修管理规定（试行） 第1分册 油浸式变压器（电抗器）检修细则')
 # obj.Index_Data()
 # obj.bulk_Index_Data()
 # obj.IndexData()

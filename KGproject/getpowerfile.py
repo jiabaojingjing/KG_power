@@ -128,6 +128,7 @@ def saveFilecontentToNeo4j(filepath,filename):
     if equipname != "":
         equipname = wipe_line_break(equipname)
         equipname = delete_BS(equipname)
+        print(equipname)
         if equipname in equiparray:
             equipnode = matcher.match("powerentity", name=equipname).first()
             if (equipnode is None):
@@ -137,7 +138,7 @@ def saveFilecontentToNeo4j(filepath,filename):
             equipnode = Node("powerentity", name=equipname)
             file_graph.create(equipnode)
         file_graph.create(Relationship(equipnode, "包含", documentnode))
-
+    return
     for row in range(1,filetable.nrows):
         for col in range(1,filetable.ncols):
             value = filetable.cell_value(row, col)

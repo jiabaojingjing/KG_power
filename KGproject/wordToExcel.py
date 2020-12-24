@@ -4,9 +4,9 @@ from openpyxl import Workbook
 import os
 import win32file
 import shutil
-path = r'C:\Users\86136\Desktop\电力缺陷\通辽调研资料\变电五项管理规定的206册细则Word版\变电评价管理规定细则'
-docxpath = r'C:\Users\86136\Desktop\电力缺陷\通辽调研资料\变电五项管理规定的206册细则Word版\变电评价管理规定细则docx'
-excelpath = r'C:\Users\86136\Desktop\电力缺陷\通辽调研资料\变电五项管理规定的206册细则Word版\变电评价管理规定细则excel'
+path = r'C:\Users\86136\Desktop\电力缺陷\通辽调研资料旧\变电五项管理规定的206册细则Word版\变电检修管理规定细则'
+docxpath = r'C:\Users\86136\Desktop\电力缺陷\通辽调研资料旧\变电五项管理规定的206册细则Word版\变电检修管理规定细则docx'
+excelpath = r'C:\Users\86136\Desktop\电力缺陷\通辽调研资料旧\变电五项管理规定的206册细则Word版\变电评价管理规定细则excel'
 
 def docxToexcel():
     docxfileset=get_all(docxpath);
@@ -96,6 +96,6 @@ def get_all(cwd):
 if __name__ == "__main__":
     #get_all(r'C:\Users\86136\Desktop\电力缺陷\通辽调研资料\变电五项管理规定的206册细则Word版\变电评价管理规定细则')
     # wordtoexcel()
-    #docToDocx()
-    docxToexcel()
+    docToDocx()
+    # docxToexcel()
     #test()
