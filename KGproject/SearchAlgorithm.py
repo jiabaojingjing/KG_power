@@ -15,8 +15,16 @@ fuzzykwdic={}
 fuzzykwawarry=[]
 segmentlist=[]
 equiplist=[]
+acceptancelist=[]
+inspectionlist=[]
 relarray=[]
 patterndic={}
+q_type = -1
+termid=0
+kw1id=0
+kw1=""
+kw2=""
+kw3=""
 file_graph = Graph(
     "http://localhost:7474",
     username="neo4j",
@@ -24,9 +32,9 @@ file_graph = Graph(
 )
 symbollist=["(",")","（","）"]
 lists = [[] for i in range(29)]  #
-pattern = [r"验收分类有哪些",r"检修分类有哪些",r"验收要求有哪些",r"异常处置有哪些",r"参加人员有哪些",r"专业巡视要点有哪些",r"关键工艺质量控制有哪些",r"例行检查关键工艺质量控制有哪些",r"更换检修关键工艺质量控制有哪些"
-            ,r"更换关键工艺质量控制",r"通用部分检修关键工艺质量控制有哪些",r"安全注意事项有哪些",r"评判项目有哪些",r"评判小项有哪些",r"检查方式有哪些",r"扣分原则有哪些",r"现场检查有哪些",r"运行规定有哪些",r"运行温度要求有哪些",
-           r"运行电压要求有哪些",r"并列运行的基本条件是什么",r"紧急申请停运规定是什么",r"巡视内容有哪些",r"操作内容有哪些",r"操作要求是什么",r"维护操作有哪些",r"典型故障有哪些",r"处理原则有哪些",r"[\u4e00-\u9fa5]现象有哪些"]
+pattern = [r"验收分类有哪些",r"检修分类有哪些",r"验收要求有哪些",r"异常处置有哪些",r"参加人员有哪些",r"专业巡视要点有哪些",r"关键工艺质量控制有哪些",r"安全注意事项有哪些",r"评判项目有哪些",r"评判小项有哪些",
+           r"检查方式有哪些",r"扣分原则有哪些",r"现场检查有哪些",r"运行规定有哪些",r"运行温度要求有哪些",r"运行电压要求有哪些",r"并列运行的基本条件是什么",r"紧急申请停运规定是什么",r"巡视内容有哪些",
+           r"操作内容有哪些",r"操作要求是什么",r"维护操作有哪些",r"典型故障有哪些",r"处理原则有哪些",r"[\u4e00-\u9fa5]现象有哪些"]
 
 def wipe_line_break(str):
     return str.replace("\n", "").replace(" ", "")
@@ -84,6 +92,7 @@ def getEntity():
             entitylist.append(value)
             print(value)
 
+
 def getRelationPreKW(filepath):
     global lists,patterndic
     id=0
@@ -115,12 +124,19 @@ def getRelationPreKW(filepath):
                         #     print("异常处置$$%%   "+prevalue)
                         if prevalue not in lists[id]:
                             lists[id].append(prevalue)
+                            print(prevalue)
 
         id+=1
+
+
+
+
 def getEquiplist():
     path = r"C:\Users\86136\Desktop\油浸式变压器\equip.xlsx"
     filedata = xlrd.open_workbook(path)
     filetable = filedata.sheet_by_index(0)
+    filetable2 = filedata.sheet_by_index(1)
+    filetable3 = filedata.sheet_by_index(2)
 
     for row in range(0, filetable.nrows):
         value = filetable.cell_value(row, 0)
@@ -131,17 +147,42 @@ def getEquiplist():
         if value not in equiplist:
             equiplist.append(value)
 
+    for row in range(0, filetable2.nrows):
+        value = filetable2.cell_value(row, 0)
+        if type(value) == str:
+            value = wipe_line_break(value)
+        if value == "":
+            continue
+        if value not in acceptancelist:
+            acceptancelist.append(value)
+            # print(value)
 
+    for row in range(0, filetable3.nrows):
+        value = filetable3.cell_value(row, 0)
+        if type(value) == str:
+            value = wipe_line_break(value)
+        if value == "":
+            continue
+        if value not in inspectionlist:
+            inspectionlist.append(value)
+            # print(value)
 # 问题中包含文档中所列关键词
 def questionAnswering(question):
+
     pos = -1
     reldic={}
     tem = []
     entityarray=[]
     # searchedRellist=[]
     entitylist = []
-    global segmentlistlength,segmentlist,relarray
+    global segmentlistlength,segmentlist,relarray,q_type, kw1,kw2,kw3,termid,kw1id
     relid=0
+    aa=HanLP.extractKeyword(question, 4)
+    # StandardTokenizer = JClass("com.hankcs.hanlp.seg.Segment").enableCustomDictionaryForcing
+    # CustomDictionary = JClass("com.hankcs.hanlp.dictionary.CustomDictionary")
+    # CustomDictionary.add("攻城狮")  # 动态增加
+    # CustomDictionary.insert("出厂验收", "nz 1024")  # 强行插入
+
     cut_statement = HanLP.segment(question)
     for i in range(len(pattern)):
         # print(i)
@@ -177,12 +218,128 @@ def questionAnswering(question):
                         if file_graph.run(searchinfo)!="":
                             break
     # 异常处理
-    if (q_type == 2):
+    if (q_type == 3):
+        index = 0
+        kw1=kw2= kw3=""
+        termid= kw1id=-1
+        for term in cut_statement:
+            termid+=1
+            if index > pos:
+                break
+                index += len(term.word)
+            if term.word in symbollist:
+                continue
+            if str(term.nature) != "nz":
+                continue
+            if kw1=="":
+                for equip in equiplist:
+                    kw1id=termid
+                    term_match = re.search(term.word, equip)
+                    if term_match:
+                        print(term.word)
+                        print(equip)
+                        print(term_match)
+                        term_pos = term_match.span()[0]
+                        if term_pos >= 0:
+                            kw1 = equip
+                            break
+            if kw1!="" and kw2=="" and termid>kw1id:
+                for acceptance in acceptancelist:
+                    acceptance_match=re.search(term.word,acceptance)
+                    if acceptance_match:
+                        acceptance_pos=acceptance_match.span()[0]
+                        if acceptance_pos>=0:
+                            kw2 = acceptance
+                            break
 
+                searchinfo = "MATCH p =(:powerentity{name:" + "'" + kw1 + "'" + "})"+"-[*]->(:powerentity{name:" + "'" + kw2 + "'" + "})" + "-[r:" + r"`异常处置`" + "]->() return p"
+                print(searchinfo)
+                print(file_graph.run(searchinfo))
+                if file_graph.run(searchinfo) != "":
+                    break
+    #专业巡视要点
+    if (q_type == 5):
 
+        index = 0
+        kw1 = kw2 = kw3 = ""
+        termid = kw1id = -1
+        for term in cut_statement:
+            termid += 1
+            if index > pos:
+                break
+                index += len(term.word)
+            if term.word in symbollist:
+                continue
+            if str(term.nature) != "nz":
+                continue
+            if kw1 == "":
+                for equip in equiplist:
+                    kw1id = termid
+                    term_match = re.search(term.word, equip)
+                    if term_match:
+                        print(term.word)
+                        print(equip)
+                        print(term_match)
+                        term_pos = term_match.span()[0]
+                        if term_pos >= 0:
+                            kw1 = equip
+                            break
+            if kw1 != "" and kw2 == "" and termid > kw1id:
+                for inspection in inspectionlist:
+                    inspection_match = re.search(term.word, inspection)
+                    if inspection_match:
+                        inspection_pos = inspection_match.span()[0]
+                        if inspection_pos >= 0:
+                            kw2 = inspection
+                            break
 
+                searchinfo = "MATCH p =(:powerentity{name:" + "'" + kw1 + "'" + "})" + "-[*]->(:powerentity{name:" + "'" + kw2 + "'" + "})" + "-[r:" + r"`专业巡视要点`" + "]->() return p"
+                print(searchinfo)
+                print(file_graph.run(searchinfo))
+                if file_graph.run(searchinfo) != "":
+                    break
 
+    # 关键工艺质量控制
+    if (q_type == 6):
 
+        index = 0
+        kw1 = kw2 = kw3 = ""
+        termid = kw1id = -1
+        for term in cut_statement:
+            termid += 1
+            if index > pos:
+                break
+                index += len(term.word)
+            if term.word in symbollist:
+                continue
+            if str(term.nature) != "nz":
+                continue
+            if kw1 == "":
+                for equip in equiplist:
+                    kw1id = termid
+                    term_match = re.search(term.word, equip)
+                    if term_match:
+                        print(term.word)
+                        print(equip)
+                        print(term_match)
+                        term_pos = term_match.span()[0]
+                        if term_pos >= 0:
+                            kw1 = equip
+                            break
+            if kw1 != "" and kw2 == "" and termid > kw1id:
+                for inspection in inspectionlist:
+                    inspection_match = re.search(term.word, inspection)
+                    if inspection_match:
+                        inspection_pos = inspection_match.span()[0]
+                        if inspection_pos >= 0:
+                            kw2 = inspection
+                            break
+
+                searchinfo = "MATCH p =(:powerentity{name:" + "'" + kw1 + "'" + "})" + "-[*]->(:powerentity{name:" + "'" + kw2 + "'" + "})" + "-[r:" + r"`专业巡视要点`" + "]->() return p"
+                print(searchinfo)
+                print(file_graph.run(searchinfo))
+                if file_graph.run(searchinfo) != "":
+                    break
 
 
 
@@ -206,10 +363,10 @@ def questionAnswering(question):
 
 if __name__ == "__main__":
     # getRelation(r"C:\Users\86136\Desktop\文档内容整理\文档\油浸式变压器\relation.xlsx")
-    # getRelationPreKW(r"C:\Users\86136\Desktop\文档内容整理\文档\油浸式变压器\国家电网公司变电验收管理规定（试行） 第1分册  油浸式变压器（电抗器）验收细则.xlsx")
-    # getRelationPreKW(r"C:\Users\86136\Desktop\文档内容整理\文档\油浸式变压器\国家电网公司变电检修管理规定（试行） 第1分册 油浸式变压器（电抗器）检修细则.xlsx")
-    # getRelationPreKW(r"C:\Users\86136\Desktop\文档内容整理\文档\油浸式变压器\国家电网公司变电评价管理规定（试行） 第1分册 油浸式变压器（电抗器）精益化评价细则.xlsx")
-    # getRelationPreKW(r"C:\Users\86136\Desktop\文档内容整理\文档\油浸式变压器\国家电网公司变电运维管理规定（试行） 第1分册  油浸式变压器（电抗器）运维细则.xlsx")
+    getRelationPreKW(r"C:\Users\86136\Desktop\油浸式变压器\国家电网公司变电验收管理规定（试行） 第1分册  油浸式变压器（电抗器）验收细则.xlsx")
+    getRelationPreKW(r"C:\Users\86136\Desktop\油浸式变压器\国家电网公司变电检修管理规定（试行） 第1分册 油浸式变压器（电抗器）检修细则.xlsx")
+    getRelationPreKW(r"C:\Users\86136\Desktop\油浸式变压器\国家电网公司变电评价管理规定（试行） 第1分册 油浸式变压器（电抗器）精益化评价细则.xlsx")
+    getRelationPreKW(r"C:\Users\86136\Desktop\油浸式变压器\国家电网公司变电运维管理规定（试行） 第1分册  油浸式变压器（电抗器）运维细则.xlsx")
     # setpatterndic()
-    getEquiplist()
-    questionAnswering("油浸式变压器（电抗器）的验收分类有哪些")
+    # getEquiplist()
+    # questionAnswering("油浸式变压器（电抗器）中冷却装置的专业巡视要点有哪些")

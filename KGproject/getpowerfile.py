@@ -177,7 +177,7 @@ def getinfor():
 
 if __name__ == "__main__":
 
-    #get_all(r'C:\Users\86136\Desktop\电力缺陷\通辽调研资料')
+    # get_all(r'C:\Users\86136\Desktop\电力缺陷\通辽调研资料')
     #SaveToNeo4j()
 
 
