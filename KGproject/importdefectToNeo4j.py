@@ -23,7 +23,7 @@ UNIT_REL = "部件"
 UNIT_TYPE_REL = "部件种类"
 PART_REL = "部位"
 # equip_array=["主变压器","断路器","电压互感器","电流互感器"]
-path=r"D:\知识图谱\油浸变压器\QGDW1906-2013输变电一次设备缺陷分类标准.xlsx"
+path=r".\文档\QGDW1906-2013输变电一次设备缺陷分类标准.xlsx"
 data = xlrd.open_workbook(path)
 table = data.sheet_by_index(0)
 
