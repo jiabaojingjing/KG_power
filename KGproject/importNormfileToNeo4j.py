@@ -4,6 +4,7 @@ import os
 import math
 import re
 import openpyxl
+
 result = []
 row=0
 col=0
@@ -38,21 +39,21 @@ def extractRelation(filepath):
                 continue
             attribute = filetable.cell_value(0, col)
             attribute = wipe_line_break(attribute)
-            # if attribute == "实体":
-            #    if value not in entityarray and len(value)<20:
-            #        entityarray.append(value)
-            #        print(value)
+            if attribute == "实体":
+               if value not in entityarray and len(value)<20:
+                   entityarray.append(value)
+                   print(value)
             # if attribute == "关系":
             #     if value not in relarray:
             #         relarray.append(value)
             #         print(value)
             #         # print(str(row),str(col))
-            if attribute == "实体":#提取regulation类
-                if "附录" in value and len(value)<=20:
-                    return
-                if value not in entityarray and len(value) < 20:
-                    entityarray.append(value)
-                    print(value)
+            # if attribute == "实体":#提取regulation类
+            #     if "附录" in value and len(value)<=20:
+            #         return
+            #     if value not in entityarray and len(value) < 20:
+            #         entityarray.append(value)
+            #         print(value)
 
 
 def getEntityType():
@@ -79,7 +80,7 @@ def getEntityType():
                         filearray.append(value)
 
 
-
+#六项规定导入函数
 def saveFilecontentToNeo4j(filepath):
 
     global document,documentnode,entitydic,reldic,relnum,entitynum,valueType
@@ -130,8 +131,13 @@ def saveFilecontentToNeo4j(filepath):
                            if valueType=="detail":
 
                                if len(value.split("#"))>=2:
-                                   name=value.split("#")[0]
-                                   desc=value.split("#")[1]
+                                   if len(value.split("："))>=2:
+                                       name = value.split("：")[0]
+                                       name = name.replace("#"," ")
+                                       desc = value.split("：")[1]
+                                   else:
+                                       name=value.split("#")[0]
+                                       desc=value.split("#")[1]
                            else:
                                name=value
                         newnode = Node(valueType, name=name, desc=desc)
@@ -169,7 +175,7 @@ def modifyfilecontent(filepath):
     wb = openpyxl.load_workbook(filepath)
     sheet = wb.active
     for row in range(2, sheet.max_row):
-        for col in range(1, sheet.max_column):
+        for col in range(1, 8):
             value=sheet.cell(None,row,col).value
             if type(value) == str:
                 value = wipe_line_break(value)
@@ -185,28 +191,18 @@ def modifyfilecontent(filepath):
                         sheet.cell(None, row, col-1).value="相关条款"
     wb.save(filepath)
 
-    # filedata = xlrd.open_workbook(filepath)
-    # filetable = filedata.sheet_by_index(0)
-    # for row in range(1,filetable.nrows):
-    #     for col in range(0,filetable.ncols):
-    #         value = filetable.cell_value(row, col)
-    #         if type(value) == str:
-    #             value = wipe_line_break(value)
-    #         if value == "":
-    #             continue
-    #
-    #         attribute = filetable.cell_value(0, col)
-    #         attribute = wipe_line_break(attribute)
-    #         if attribute == "实体":
-    #             if len(value.split("#")) >= 2 and col>=2:
-    #                 rel= filetable.cell_value(row, col-1)
-    #                 if rel=="含义":
 
 
 
 if __name__ == "__main__":
 
     rulepath=r"C:\Users\86136\Desktop\六项管理规定"
+    transformerpath=r"D:\知识图谱\油浸式变压器"
+    transformerarray=[]
+    transformerarray.append(transformerpath+"\国家电网公司变电评价管理规定（试行） 第1分册 油浸式变压器（电抗器）精益化评价细则.xlsx")
+
+
+
     # saveFilecontentToNeo4j(r"C:\Users\86136\Desktop\文档内容整理\文档\油浸式变压器\国家电网公司变电验收管理规定（试行） 第1分册  油浸式变压器（电抗器）验收细则.xlsx", "")
     # saveFilecontentToNeo4j(r"C:\Users\86136\Desktop\文档内容整理\文档\油浸式变压器\国家电网公司变电检修管理规定（试行） 第1分册 油浸式变压器（电抗器）检修细则.xlsx", "")
     # saveFilecontentToNeo4j(r"C:\Users\86136\Desktop\文档内容整理\文档\油浸式变压器\国家电网公司变电评价管理规定（试行） 第1分册 油浸式变压器（电抗器）精益化评价细则.xlsx", "")
@@ -227,7 +223,7 @@ if __name__ == "__main__":
     # extractRelation(rulepath+r"\国家电网公司变电运维管理规定（试行）.xlsx")
     # extractRelation(rulepath+r"\国家电网公司变电运维检修管理办法（试行）.xlsx")
 
-    # getEntityType()
+    getEntityType()
     # saveFilecontentToNeo4j(rulepath+r"\国家电网公司变电检测管理规定（试行）.xlsx")
     # saveFilecontentToNeo4j(rulepath+r"\国家电网公司变电检修管理规定（试行）.xlsx")
     # saveFilecontentToNeo4j(rulepath+r"\国家电网公司变电评价管理规定（试行）.xlsx")
@@ -235,11 +231,15 @@ if __name__ == "__main__":
     # saveFilecontentToNeo4j(rulepath+r"\国家电网公司变电运维管理规定（试行）.xlsx")
     # saveFilecontentToNeo4j(rulepath+r"\国家电网公司变电运维检修管理办法（试行）.xlsx")
 
-    modifyfilecontent(rulepath+r"\国家电网公司变电检测管理规定（试行）.xlsx")
-    modifyfilecontent(rulepath+r"\国家电网公司变电检修管理规定（试行）.xlsx")
-    modifyfilecontent(rulepath+r"\国家电网公司变电评价管理规定（试行）.xlsx")
-    modifyfilecontent(rulepath+r"\国家电网公司变电验收管理规定（试行）.xlsx")
-    modifyfilecontent(rulepath+r"\国家电网公司变电运维管理规定（试行）.xlsx")
-    modifyfilecontent(rulepath+r"\国家电网公司变电运维检修管理办法（试行）.xlsx")
+    # modifyfilecontent(rulepath+r"\国家电网公司变电检测管理规定（试行）.xlsx")
+    # modifyfilecontent(rulepath+r"\国家电网公司变电检修管理规定（试行）.xlsx")
+    # modifyfilecontent(rulepath+r"\国家电网公司变电评价管理规定（试行）.xlsx")
+    # modifyfilecontent(rulepath+r"\国家电网公司变电验收管理规定（试行）.xlsx")
+    # modifyfilecontent(rulepath+r"\国家电网公司变电运维管理规定（试行）.xlsx")
+    # modifyfilecontent(rulepath+r"\国家电网公司变电运维检修管理办法（试行）.xlsx")
+
+    for path in transformerarray:
+        extractRelation(path)
+
 
 
