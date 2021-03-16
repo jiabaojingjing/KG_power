@@ -8,10 +8,11 @@ import os
 import math
 import re
 import openpyxl
-filearray = []
+filearray =[]
 entityarray = []
 partdic={}
 equiparray=[]
+dicarray=[]
 def wipe_line_break(str):
         return str.replace("\n", "").replace(" ", "")
 
@@ -43,6 +44,22 @@ def getpartdic(filepath):
                 if part not in  partdic[equip]:
                     partdic[equip].append(part)
     return partdic
+def getdicbyType(filepath,sheetname):
+    dicarray.clear()
+    filedata = xlrd.open_workbook(filepath)
+    filetable = filedata.sheet_by_name(sheetname)
+
+    for row in range(0, filetable.nrows):
+        for col in range(0, filetable.ncols):
+            value = filetable.cell_value(row, col)
+            if type(value) == str:
+                value = wipe_line_break(value)
+            if value == "":
+                continue
+            if col == 0:
+                if value not in dicarray:
+                    dicarray.append(value)
+    return dicarray
 
 #获取检修策略与评价的相关知识点
 def  getfileKnowlodgePoint(filepath):
@@ -67,12 +84,12 @@ def  getfileKnowlodgePoint(filepath):
                        if point not in pointarray:
                            print(point)
                            pointarray.append(point)
-
     wb.save(filepath)
 
 def extractRelation(filepath):
-    # print(filepath)
-
+    print(filepath)
+    chartrow = 300
+    chartcol = 300
     global relarray,entityarray
     entityarray.clear()
     filedata = xlrd.open_workbook(filepath)
@@ -88,9 +105,14 @@ def extractRelation(filepath):
             attribute = filetable.cell_value(0, col)
             attribute = wipe_line_break(attribute)
             if attribute == "实体":
-               if value not in entityarray and len(value)<15:
-                   entityarray.append(value)
-                   print(value)
+                entityMatch = re.search("附录", value)
+                if entityMatch:
+                    chartrow=row
+                    chartcol=col
+                if col>=chartcol and row>=chartrow and len(value)>0 and len(value)<30 and "。" not in value and "#" not in value:
+                    print(value)
+               # if value not in entityarray and len(value)<15:
+               #     entityarray.append(value)
             # if attribute == "关系":
             #     if value not in relarray:
             #         relarray.append(value)
@@ -115,7 +137,8 @@ def get_allfile(cwd):
             row += 1
             get_allfile(sub_dir)
         else:
-            filearray.append(i)
+
+            filearray.append(cwd+i)
     return filearray
 
 def get_equip(path):
@@ -129,21 +152,25 @@ def get_equip(path):
                 equiparray.append(value)
 
 def extractEntity():
-    path = r"D:\知识图谱\文档\206\\"
-    equippath=r"D:\知识图谱\equip.xlsx"
-    get_allfile(path)
+    global filearray
+    path = r".\文档\\"
+    equippath=r".\文档\equip.xlsx"
+
+    get_allfile(path+r"变电检修管理规定细则\\")
+    get_allfile(path+r"变电运维管理规定细则\\")
+    get_allfile(path+r"变电评价管理规定细则\\")
+    get_allfile(path+r"变电验收管理规定细则\\")
+
     get_equip(equippath)
 
-    global filearray
     # for equip in equiparray:
-    equip="端子箱及检修电源箱"
+    equip="站用交流电源系统"
     for file in filearray:
         equipfileMatch = re.search(equip, file)
         if equipfileMatch:
             print("equip: "+equip +" "+file)
-            filepath=path+file
-            extractRelation(filepath)
-
+            # filepath=path+file
+            extractRelation(file)
 
 #
 if __name__ == '__main__':
@@ -159,4 +186,27 @@ if __name__ == '__main__':
     # for pathitem in transformerarray:
     #     getfileKnowlodgePoint(pathitem)
 
-    extractEntity()
+    # extractEntity()
+    path = r".\文档"
+    servicefilearray = []
+    evaluatefilearray = []
+    acceptancefilearray = []
+    operationsfilearray = []
+    detectionfilearray = []
+
+    # detectionfilearray = get_allfile(path + r"\变电检测管理规定细则\\")
+    # servicefilearray = get_allfile(path + r"\变电检修管理规定细则\\")
+    # operationsfilearray = get_allfile(path + r"\变电运维管理规定细则\\")
+    # acceptancefilearray = get_allfile(path + r"\变电验收管理规定细则\\")
+    evaluatefilearray = get_allfile(path + r"\规范文档\\")
+
+    for file in detectionfilearray:
+        extractRelation(file)
+    for file in servicefilearray:
+        extractRelation(file)
+    for file in operationsfilearray:
+        extractRelation(file)
+    for file in acceptancefilearray:
+        extractRelation(file)
+    for file in evaluatefilearray:
+        extractRelation(file)

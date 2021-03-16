@@ -3,16 +3,19 @@ from py2neo import Graph, Node, Relationship, NodeMatcher
 import xlrd
 import os
 import math
+from copy import deepcopy
 
-from globalFunction import connectNeo4j,wipe_line_break,extractRelation,getpartdic,get_allfile
-partdic={}
+from globalFunction import connectNeo4j,wipe_line_break,extractRelation,getpartdic,get_allfile,getdicbyType
+# partdic={}
 reldic={}
 entitydic={}
-equiparray=[]
-detctionarray=[]
 
-def saveFilecontentToNeo4j(filepath,fileType):
 
+
+# detctionarray=[]
+
+def saveFilecontentToNeo4j(filepath):
+    print(filepath)
     global document,documentnode,entitydic,reldic,relnum,entitynum,valueType,partdic,filename,provalueType,equiparray,filedata,equipname
     reldic.clear()
     entitydic.clear()
@@ -26,9 +29,9 @@ def saveFilecontentToNeo4j(filepath,fileType):
 
     equipname=filetable1.cell_value(1, 0)
 
-    for key in partdic.keys():
-        if key not in equiparray:
-            equiparray.append(key)
+    # for key in partdic.keys():
+    #     if key not in equiparray:
+    #         equiparray.append(key)
 
     for row in range(1,filetable1.nrows):
         for col in range(0,filetable1.ncols):
@@ -48,9 +51,6 @@ def saveFilecontentToNeo4j(filepath,fileType):
                 entityid = math.ceil(col / 2)
                 #判断实体类型
                 valueType = getEntityType(value)
-                if len(valueType)==0:
-                    valueType = fileType
-
                 if len(reldic)>0 and len(entitydic)>0:
                     if col>0:
                         fathernode=entitydic[entityid-1]
@@ -78,10 +78,11 @@ def saveFilecontentToNeo4j(filepath,fileType):
                         file_graph.create(newnode)
                     entitydic[entityid]=newnode
             elif attribute=="关系":
+                print(value)
                 reldic[int(col/2)]=value
-    savefileKnowledgePoint(filetable2,fileType)
+    savefileKnowledgePoint(filetable2)
 
-def savefileKnowledgePoint(filetable2,fileType):
+def savefileKnowledgePoint(filetable2):
 
     for row in range(1, filetable2.nrows):
         for col in range(0, filetable2.ncols):
@@ -100,8 +101,6 @@ def savefileKnowledgePoint(filetable2,fileType):
                 entityid = math.ceil(col / 2)
                 # 判断实体类型
                 valueType = getEntityType(value)
-                if len(valueType) == 0:
-                    valueType = fileType
 
                 if len(reldic) > 0 and len(entitydic) > 0:
                     if col > 0:
@@ -110,11 +109,13 @@ def savefileKnowledgePoint(filetable2,fileType):
                         if relation != "" and fathernode != "":
                             if relation=="起草人":
                                 valueType="drafter"
+                                # print("name: " + value)
                             elif relation=="起草单位":
                                 valueType = "department"
+
                         newnode = matcher.match(valueType, name=value, desc=desc, equip=equipname).first()
                         if newnode is None:
-                            newnode = Node(valueType, name=name, desc=desc, equip=equipname)
+                            newnode = Node(valueType, name=value, desc=desc, equip=equipname)
                             file_graph.create(newnode)
                         file_graph.create(Relationship(fathernode, relation, newnode))
                         entitydic[entityid] = newnode
@@ -133,22 +134,58 @@ def savefileKnowledgePoint(filetable2,fileType):
                         file_graph.create(newnode)
                     entitydic[entityid] = newnode
             elif attribute == "关系":
+
                 reldic[int(col / 2)] = value
 
   # 判断实体类型是否为设备或部件
 def getEntityType(entity):
-    if entity in partdic[equipname]:
-        entityType = "part"
+    # if entity in partdic[equipname]:
+    #     entityType = "part"
+    # if entity in equiparray:
+    #     entityType = "equip"
+    # return entityType
+
     if entity in equiparray:
         entityType = "equip"
+    elif entity in partarray:
+        entityType = "part"
+    elif entity in facilityarray:
+        entityType = "facility"
+    elif entity in signarray:
+        entityType = "sign"
+    elif entity in decoratingMaterialarray:
+        entityType = "decoratingMaterial"
+    elif entity in chartarray:
+        entityType = "chart"
+    else:
+        entityType = "regulation"
     return entityType
 
 
+
 if __name__ == "__main__":
-    global file_graph,matcher
+    global file_graph,matcher,partarray,equiparray,facilityarray,decoratingMaterialarray,instrumentarray,signarray,chartarray
+
+    equiparray = []
+    partarray = []
+    signarray = []
+    chartarray = []
+    facilityarray = []
+    chartarray = []
+    decoratingMaterialarray = []
+    instrumentarray = []
+
     file_graph = connectNeo4j()
     matcher = NodeMatcher(file_graph)
-    partdic=getpartdic(r".\文档\equip.xlsx")
+
+    partarray=deepcopy(getdicbyType(r".\文档\equip2.xlsx","部件"))
+    equiparray=deepcopy(getdicbyType(r".\文档\equip2.xlsx","设备"))
+    facilityarray=deepcopy(getdicbyType(r".\文档\equip2.xlsx","设施"))
+    decoratingMaterialarray=deepcopy(getdicbyType(r".\文档\equip2.xlsx","装修材料"))
+    instrumentarray=deepcopy(getdicbyType(r".\文档\equip2.xlsx","工具"))
+    signarray=deepcopy(getdicbyType(r".\文档\equip2.xlsx","标志"))
+    chartarray=deepcopy(getdicbyType(r".\文档\equip2.xlsx","图表"))
+
 
     path = r".\文档"
 
@@ -159,22 +196,22 @@ if __name__ == "__main__":
     detectionfilearray=[]
 
 
-    detectionfilearray=get_allfile(path + "\变电检测管理规定细则")
-    servicefilearray=get_allfile(path + "\变电检修管理规定细则")
-    operationsfilearray= get_allfile(path + "\变电运维管理规定细则")
-    acceptancefilearray=get_allfile(path + "\变电验收管理规定细则")
-    evaluatefilearray=get_allfile(path + "\变电评价管理规定细则")
+    detectionfilearray=get_allfile(path + r"\变电检测管理规定细则\\")
+    # servicefilearray=get_allfile(path + r"\变电检修管理规定细则\\")
+    # operationsfilearray= get_allfile(path + r"\变电运维管理规定细则\\")
+    # acceptancefilearray=get_allfile(path + r"\变电验收管理规定细则\\")
+    # evaluatefilearray=get_allfile(path + r"\变电评价管理规定细则\\")
 
 
     for file in detectionfilearray:
-        saveFilecontentToNeo4j(file, "检测")
+        saveFilecontentToNeo4j(file)
     for file in servicefilearray:
-        saveFilecontentToNeo4j(file, "检修")
+        saveFilecontentToNeo4j(file)
     for file in operationsfilearray:
-        saveFilecontentToNeo4j(file, "运维")
+        saveFilecontentToNeo4j(file)
     for file in acceptancefilearray:
-        saveFilecontentToNeo4j(file,"验收")
+        saveFilecontentToNeo4j(file)
     for file in evaluatefilearray:
-        saveFilecontentToNeo4j(file,"评价")
+        saveFilecontentToNeo4j(file)
 
 
